@@ -1,11 +1,6 @@
 ﻿using EnvDTE;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Project = EnvDTE.Project;
 
 namespace DependencyGraph.Scan
@@ -20,13 +15,37 @@ namespace DependencyGraph.Scan
 
         /// <summary>Item in this node.</summary>
         public Project Item
-        { 
+        {
             get => _item;
             private set
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
                 _item = value;
-                ProjectName = _item.Name;
+                string targetFrameworks = GetTargetFrameworks(_item);
+                ProjectName = string.IsNullOrEmpty(targetFrameworks) ? _item.Name : $"{_item.Name} ({targetFrameworks})";
+            }
+        }
+
+        private string GetTargetFrameworks(Project item)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            try
+            {
+                Property targetFrameworks = item.Properties.Item("TargetFrameworks");
+                if (targetFrameworks != null && targetFrameworks.Value != null && !string.IsNullOrEmpty(targetFrameworks.Value.ToString()))
+                {
+                    return targetFrameworks.Value.ToString();
+                }
+
+                Property targetFramework = item.Properties.Item("FriendlyTargetFramework");
+                return targetFramework.Value.ToString();
+            }
+
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception: {ex.Message}");
+                return string.Empty;
             }
         }
 
@@ -51,18 +70,18 @@ namespace DependencyGraph.Scan
             return new ProjectReferenceTree(project);
         }
 
-        public int ReferencesCount      { get; private set; }
-        public int ReferencedByCount    { get; private set; }
+        public int ReferencesCount { get; private set; }
+        public int ReferencedByCount { get; private set; }
 
         public static ProjectReferenceTree GetProjectReferencesOnly(Project project)
         {
             //Console.Out.WriteLine("[GetProjectReferencesOnly] item.Name = {0}", project.Name);
-            var ret = new ProjectReferenceTree 
+            var ret = new ProjectReferenceTree
             {
-                Item                = project,
-                DepthLevel          = 0,
+                Item = project,
+                DepthLevel = 0,
                 Proj2ProjRefTreeMap = new Dictionary<Project, ProjectReferenceTree>(),
-                AllPRTs             = new HashSet<ProjectReferenceTree>()
+                AllPRTs = new HashSet<ProjectReferenceTree>()
             };
 
             ret.AllPRTs.Add(ret);
@@ -72,10 +91,10 @@ namespace DependencyGraph.Scan
                 ret.Proj2ProjRefTreeMap.Add(projRef, ret);
                 var projRefPRT = new ProjectReferenceTree
                 {
-                    Item                = projRef,
-                    DepthLevel          = 1,
+                    Item = projRef,
+                    DepthLevel = 1,
                     Proj2ProjRefTreeMap = ret.Proj2ProjRefTreeMap,
-                    AllPRTs             = ret.AllPRTs
+                    AllPRTs = ret.AllPRTs
                 };
                 projRefPRT.AllPRTs.Add(projRefPRT);
                 ret._references.Add(projRefPRT);
@@ -88,7 +107,7 @@ namespace DependencyGraph.Scan
         public ProjectReferenceTree(Project project, ProjectReferenceTree projectReferenceTree = null, int depthLevel = 0)
         {
             //Console.Out.WriteLine("[ProjectReferenceTree] item.Name = {0}, depth = {1}", project.Name, depthLevel);
-            this.Item       = project;
+            this.Item = project;
             this.DepthLevel = depthLevel;
             if (projectReferenceTree == null)
             {
@@ -125,7 +144,8 @@ namespace DependencyGraph.Scan
                 References.Add(refTree);
 
                 // Do steal parent if it is deeper in tree.
-                if (parentRefTree.DepthLevel > DepthLevel) return;
+                if (parentRefTree.DepthLevel > DepthLevel)
+                    return;
 
                 refTree.SetLevel(DepthLevel + 1);
                 Proj2ProjRefTreeMap[item] = this;
@@ -138,7 +158,8 @@ namespace DependencyGraph.Scan
 
         private void AddProjects(IEnumerable<Project> projects)
         {
-            foreach (var project in projects) AddProject(project);
+            foreach (var project in projects)
+                AddProject(project);
         }
 
         private void SetLevel(int depthLevel)
@@ -147,7 +168,8 @@ namespace DependencyGraph.Scan
             foreach (var s in References)
             {
                 var pr = Proj2ProjRefTreeMap[s.Item];
-                if (pr != this || pr.DepthLevel > depthLevel) continue;
+                if (pr != this || pr.DepthLevel > depthLevel)
+                    continue;
                 Proj2ProjRefTreeMap[s.Item] = this;
                 s.SetLevel(depthLevel + 1);
             }
@@ -194,31 +216,40 @@ namespace DependencyGraph.Scan
         /// <param name="d">Depth level - negative value will retrun subs on level next to this node level.</param>
         public List<ProjectReferenceTree> SubsOnLevel(int d = -1)
         {
-            if (d < 0) d = this.DepthLevel + 1;
+            if (d < 0)
+                d = this.DepthLevel + 1;
             var ls = new List<ProjectReferenceTree>();
-            foreach (var s in References) if (s.DepthLevel == d) ls.Add(s);
+            foreach (var s in References)
+                if (s.DepthLevel == d)
+                    ls.Add(s);
             return ls;
         }
 
         public List<ProjectReferenceTree> AllOnLevel(int d = -1)
         {
-            if (d < 0) d = this.DepthLevel + 1;
+            if (d < 0)
+                d = this.DepthLevel + 1;
             var ret = new List<ProjectReferenceTree>();
-            foreach (var prt in AllPRTs) if (prt.DepthLevel == d) ret.Add(prt);
-            if (ret.Count == 0) return null;
+            foreach (var prt in AllPRTs)
+                if (prt.DepthLevel == d)
+                    ret.Add(prt);
+            if (ret.Count == 0)
+                return null;
             return ret;
         }
 
         public ProjectReferenceTree GetDeepestReference()
         {
-            if (!Proj2ProjRefTreeMap.ContainsKey(Item)) return null;
+            if (!Proj2ProjRefTreeMap.ContainsKey(Item))
+                return null;
             return Proj2ProjRefTreeMap[Item];
         }
 
         public ProjectReferenceTree GetPRTFromReferences(Project project)
         {
             foreach (var sr in References)
-                if (sr.Item.Equals(project)) return sr;
+                if (sr.Item.Equals(project))
+                    return sr;
             return null;
         }
 
@@ -226,7 +257,8 @@ namespace DependencyGraph.Scan
         /// <param name="action"></param>
         public void WithEach(Action<ProjectReferenceTree> action)
         {
-            foreach (var projectReferenceTree in AllPRTs) action(projectReferenceTree);
+            foreach (var projectReferenceTree in AllPRTs)
+                action(projectReferenceTree);
         }
         #endregion
 

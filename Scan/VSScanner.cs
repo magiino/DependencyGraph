@@ -11,16 +11,16 @@ namespace DependencyGraph.Scan
 {
     public class VSScanner
     {
-        private List<Project>       _projects   = new List<Project>();
-        private List<VSProject2>    _vsprojects = new List<VSProject2>();
-        private bool                _scanned    = false;
+        private List<Project> _projects = new List<Project>();
+        private List<VSProject2> _vsprojects = new List<VSProject2>();
+        private bool _scanned = false;
 
-        public List<Project>        Projects            { get => _projects; }
-        public List<VSProject2>     Vsprojects          { get => _vsprojects; }
-        public DTE2                 _dte                { get; set; }
-        public string               SolutionName        { get; set; }
-        public string               StartupProjectName  { get; set; }
-        public Project              StartupProject      { get; set; }
+        public List<Project> Projects { get => _projects; }
+        public List<VSProject2> Vsprojects { get => _vsprojects; }
+        public DTE2 _dte { get; set; }
+        public string SolutionName { get; set; }
+        public string StartupProjectName { get; set; }
+        public Project StartupProject { get; set; }
 
         public VSScanner(_DTE dte)
         {
@@ -33,7 +33,8 @@ namespace DependencyGraph.Scan
 
         public void Run()
         {
-            if (_scanned) return;
+            if (_scanned)
+                return;
             ThreadHelper.ThrowIfNotOnUIThread();
 
             SolutionName = _dte.Solution.FullName;
@@ -59,7 +60,8 @@ namespace DependencyGraph.Scan
             var p = GetProject(projectName);
             if (p == null)
             {
-                if (_dte != null) WriteLine($@"Couldn't find project named ""{projectName}"" in ""{SolutionName}"" solution.");
+                if (_dte != null)
+                    WriteLine($@"Couldn't find project named ""{projectName}"" in ""{SolutionName}"" solution.");
                 return null;
             }
             ProjectReferenceTree.toString = (r) =>
@@ -77,7 +79,8 @@ namespace DependencyGraph.Scan
             var p = GetProject(projectName);
             if (p == null)
             {
-                if (_dte != null) WriteLine($@"Couldn't find project named ""{projectName}"" in ""{SolutionName}"" solution.");
+                if (_dte != null)
+                    WriteLine($@"Couldn't find project named ""{projectName}"" in ""{SolutionName}"" solution.");
                 return null;
             }
             ProjectReferenceTree.toString = (r) =>
@@ -99,10 +102,12 @@ namespace DependencyGraph.Scan
 
         private void PrintReferences(VSProject2 vsp)
         {
-            if (vsp == null) return;
+            if (vsp == null)
+                return;
             foreach (Reference r in vsp.References)
             {
-                if (r.SourceProject == null) continue;
+                if (r.SourceProject == null)
+                    continue;
                 WriteLine($@"	reference: {r.Name}");
                 //WriteLine($@"		type: {r.SourceProject?.Name}");
             }
@@ -113,18 +118,25 @@ namespace DependencyGraph.Scan
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             //Console.Out.WriteLine("{0,-21}\t{1}\t{2}", p.Name, p.Kind, p.UniqueName);
-            if (IsProject(p)) { pros.Add(p); return false; }
+
+            if (IsProject(p))
+            {
+                pros.Add(p);
+                return false;
+            }
+
             for (int i = 1; i <= p.ProjectItems.Count; ++i)
             {
                 Project sp = p.ProjectItems.Item(i).Object as Project;
-                if (sp == null) continue;
+                if (sp == null)
+                    continue;
                 ExpandProjectsFolder(sp, pros);
             }
             return true;
         }
 
-        const string PROJECT_FOLDERS     = "{66A26720-8FB5-11D2-AA7E-00C04F688DDE}";
-        const string SOLUTION_FOLDER     = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
+        const string PROJECT_FOLDERS = "{66A26720-8FB5-11D2-AA7E-00C04F688DDE}";
+        const string SOLUTION_FOLDER = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
         const string MISCELLANEOUS_FILES = "{66A2671D-8FB5-11D2-AA7E-00C04F688DDE}";
 
         // Ref: https://github.com/JamesW75/visual-studio-project-type-guid
@@ -154,10 +166,12 @@ namespace DependencyGraph.Scan
             VSProject vsProject = p.Object as VSProject;
             foreach (Reference projRef in vsProject.References)
             {
-                if (projRef == null) continue;
+                if (projRef == null)
+                    continue;
                 try
                 {
-                    if (projRef.SourceProject == null) continue;
+                    if (projRef.SourceProject == null)
+                        continue;
                 }
                 catch { continue; }
                 projects.Add(projRef.SourceProject);

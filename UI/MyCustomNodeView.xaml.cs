@@ -126,7 +126,18 @@ namespace DependencyGraph.UI
         public CustomNodeViewModel()
         {
             //this.BackColor
-            //this.PropertyChanged += onChanged;
+            //PropertyChanged += onChanged;
+
+            // React to selection changes
+            this.WhenAnyValue(x => x.IsSelected)
+                .Subscribe(selected =>
+                {
+                    if (selected)
+                    {
+                        // Handle click / selection here
+                        Console.WriteLine("Node selected!");
+                    }
+                });
         }
 
         private void onChanged(object sender, PropertyChangedEventArgs e)

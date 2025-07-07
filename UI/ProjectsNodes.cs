@@ -232,7 +232,7 @@ namespace DependencyGraph.UI
         {
             var viewModel   = new CustomNodeViewModel();
             viewModel.nodes = this;
-            viewModel.Name  = prt.ProjectName;
+            viewModel.Name = prt.ProjectName;
             //n.BackColor = Colors.DarkOliveGreen;
             //n.IsCollapsed = true;
             _networkViewModel.Nodes.Add(viewModel);
